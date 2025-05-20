@@ -1,0 +1,38 @@
+@use 'vuetify/styles' with (
+  $color-pack: false
+);
+
+// Variables
+$body-font-family: 'Roboto', sans-serif;
+$border-radius-root: 6px;
+
+// Estilos globales
+.v-application {
+  font-family: $body-font-family !important;
+}
+
+// Personalización de componentes
+.v-card {
+  border-radius: $border-radius-root;
+}
+
+.v-btn {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+// Estilos personalizados
+.custom-rounded {
+  border-radius: $border-radius-root;
+}
+
+// Transiciones
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+} 
