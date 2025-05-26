@@ -6,8 +6,8 @@ import SuccessPage from "@/generalComponents/AlertMessage/SuccessMessage.vue";
 const routes = [
   {
     path: '/',
-    name: 'Landing',
-    component: () => import("@/views/Landing/Landing.vue"),
+    name: 'Home',
+    component: ()=> import("@/views/Commerce/Home/View/HomeView.vue"),
   }, 
   {
     path: "/onboarding",

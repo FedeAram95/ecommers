@@ -1,8 +1,10 @@
 <template>
-  <header class="header">
+  <header
+    class="header"
+    :style="headerStyle"
+  >
     <div class="header-content">
       <div class="header-left">
-        <LandingButton/>
         <img
           :src="logo"
           @click="goHome"
@@ -13,11 +15,6 @@
       </div>
 
       <div class="header-right">
-        <SearchBar
-          v-if="!isSimpleHeader"
-          :fetchSuggestions="fetchSuggestions"
-          @select-suggestion="handleSuggestionSelect"
-        />
 
         <div v-if="loggedIn" class="user-menu">
           <div @click.stop="toggleDropdown" class="user-button">
@@ -54,7 +51,12 @@
         </div>
 
         <template v-else>
-          <v-btn @click="handleUserClick" class="login-button">
+          <v-btn 
+            @click="handleUserClick" 
+            class="login-button" 
+            dense 
+            rounded
+          >
             Iniciar Sesión
           </v-btn>
         </template>
@@ -87,12 +89,11 @@
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useUserStore } from "@/store";
-import api from '@/plugins/axios';
 
-import LandingButton from "@/generalComponents/LandingButton/View/LandingButton.vue";
 import logoImage from "@/assets/logo.png";
+import headerBg from "@/assets/Ohnolore2.png"; 
+
 import DropdownMenu from "@/views/Commerce/ComponentsCommerce/DropdownMenu/View/DropdownMenu.vue";
-import SearchBar from "@/views/Commerce/ComponentsCommerce/Header/Component/SearchBar.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -155,31 +156,6 @@ const updateCartCount = () => {
   cartCount.value = cart.reduce((acc, item) => acc + item.quantity, 0);
 };
 
-const fetchSuggestions = async (query) => {
-  try {
-    const response = await api.get(`api/product?keyword=${query}`);
-    const results = response.data;
-    const normalizedQuery = normalizeText(query);
-    return results.filter((item) => matchesMultipleTags(item, normalizedQuery));
-  } catch (error) {
-    return error;
-  }
-};
-
-const matchesMultipleTags = (product, query) => {
-  if (!product.tags) return false;
-  const tags = product.tags.toLowerCase();
-  return tags.includes(query.toLowerCase());
-};
-
-const normalizeText = (text) => {
-  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-};
-
-const handleSuggestionSelect = (suggestion) => {
-  router.push({ name: "ProductDetail", params: { id: suggestion.id } });
-};
-
 onMounted(() => {
   const storedUsername = localStorage.getItem("username");
   if (storedUsername) {
@@ -198,21 +174,39 @@ onUnmounted(() => {
 watch(route, () => {
   updateHeaderMode();
 });
+
+const headerStyle = {
+  backgroundImage: `url(${headerBg})`,
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "center center",
+  backgroundSize: "cover",
+};
 </script>
 
 <style scoped>
 .header {
-  position: absolute;
+  position: relative;
   top: 0;
   z-index: 100000;
   width: 100%;
-  background-color: #2968C8;
-  min-height: 140px;
-  padding-top: 24px;
-  border-bottom: 4px solid #FF8D3F;
+  height: 180px; 
+  padding-top: 30px;
+  color: white;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
 }
 
-.header-content {
+.header::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.2); /* overlay sutil */
+  z-index: 0;
+  pointer-events: none;
+}
+
+.header > .header-content {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -297,24 +291,23 @@ watch(route, () => {
   width: 100%;
   align-items: center;
   justify-content: center;
-  gap: px;
   padding: 8px 16px;
-  text-align: left;
+  font-weight: 500;
   font-size: 14px;
-  color: #374151;
-  transition: background-color 0.3s;
+  text-align: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  color: black;
 }
 
 .dropdown-item:hover {
   background-color: #f3f4f6;
 }
 
-.dropdown-item.logout {
-  color: #dc2626;
-}
-
-.dropdown-item.logout:hover {
-  background-color: #fee2e2;
+.logout {
+  border-top: 1px solid #e5e7eb;
 }
 
 .cart-icon {
@@ -323,85 +316,76 @@ watch(route, () => {
 }
 
 .cart-svg {
-  margin-top: 4px;
-  display: flex;
-  height: 32px;
-  width: 32px;
-  align-items: center;
-  text-align: center;
   color: white;
+  height: 24px;
+  width: 24px;
 }
 
 .cart-count {
   position: absolute;
-  width: 22px;
-  height: 22px;
-  top: 3px;
-  right: 3px;
+  top: -8px;
+  right: -8px;
   background-color: #FF8D3F;
-  color: #FFFFFF;
-  border-radius: 50%;
-  padding: 2px 4px;
-  animation: bounce 1.5s ease infinite;
-  font-size: 13px;
-  font-weight: bold;
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 0 6px;
+  border-radius: 20px;
 }
 
 .login-button {
-  padding: 21px 25px;
-  border-radius: 9999px;
-  font-size: 14px;
-  background-color: #FF8D3F;
+  background-color: transparent;
   color: white;
-  text-transform: none;
-  border: none;
+  border: 1px solid white;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 6px 16px;
   cursor: pointer;
-  transition: background-color 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 2;
-  box-shadow: none;
 }
 
 .login-button:hover {
-  background-color: #e57a2d;
-  box-shadow: none;
+  background-color: #FF8D3F;
+  border-color: #FF8D3F;
+  color: white;
 }
 
-@keyframes bounce {
-  0%, 100% {
+/* Transitions */
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: opacity 0.3s;
+}
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+}
+
+.bounce-enter-active {
+  animation: bounce-in 0.5s;
+}
+.bounce-leave-active {
+  animation: bounce-out 0.5s;
+}
+
+@keyframes bounce-in {
+  0%, 20%, 50%, 80%, 100% {
     transform: translateY(0);
   }
-  50% {
-    transform: translateY(-15px);
+  40% {
+    transform: translateY(-8px);
+  }
+  60% {
+    transform: translateY(-4px);
   }
 }
 
-@media (max-width: 768px) {
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
+@keyframes bounce-out {
+  0% {
+    transform: translateY(0);
   }
-
-  .header-right {
-    width: 100%;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .search-container {
-    width: 100%;
-  }
-
-  .logo {
-    height: 8vh;
-  }
-
-  .site-name {
-    font-size: 1.2rem;
+  100% {
+    transform: translateY(24px);
+    opacity: 0;
   }
 }
 </style>
-

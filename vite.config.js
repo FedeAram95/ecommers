@@ -38,10 +38,10 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://practicas.teclab.edu.ar',
+        target: 'http://localhost:8081',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path
+        rewrite: (path) => path.replace(/^\/api/, '') // ← elimina el "/api"
       }
     }
   },

@@ -1,8 +1,8 @@
 <template>
   <div class="loader-container">
-    <div class="text-wrapper">
-      <div class="social"><span class="special-s">S</span>OCIAL</div>
-      <div class="learning">LEARNING</div>
+    <div class="loader-box">
+      <div class="ohnolore">OHNOLORE</div>
+      <div class="location-box">ESTILO CAMPO - SALSIPUEDES</div>
     </div>
   </div>
 </template>
@@ -10,96 +10,56 @@
 <style scoped>
 .loader-container {
   position: fixed;
-  top: 0;
-  left: 0;
+  top: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);
+  max-width: 800px; /* <-- más ancho */
+  padding: 2.5rem;
+  border-radius: 24px;
+  background-color: #fefefe;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  animation: floatLoader 3s ease-in-out infinite;
+}
+
+.loader-box {
+  background: linear-gradient(to right, #8b5e3c, #a47148); /* Madera */
+  border-radius: 16px;
+  padding: 2rem; /* <-- más espacio interno */
   width: 100%;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #f1f5f9;
-  z-index: 9999;
-}
-
-.text-wrapper {
-  position: absolute;
-  padding: 17px 450px 10px 450px;
-  background: linear-gradient(135deg, #242424 45%, #2968C8 70%);
-  mask-image: linear-gradient(to right, transparent 0%, black 40%, black 60%, transparent 100%);
-  box-shadow: 10px 3px 550px black;
-}
-
-.social, .learning {
+  text-align: center;
   color: white;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
 }
 
-.social {
-  font-size: 1.3rem;
-  letter-spacing: 13px;
-  animation: socialAnimation 3s infinite;
+.ohnolore {
+  font-size: 2.2rem;
   font-weight: 900;
-  margin-bottom: -10px;
-}
-
-.learning {
-  font-size: 1rem;
+  font-family: 'Segoe UI', sans-serif;
   letter-spacing: 6px;
-  animation: learningAnimation 3s infinite;
-  margin-left: 40px;
+  margin-bottom: 1.5rem;
+  animation: floatText 3s ease-in-out infinite;
 }
 
-.social::before, .learning::before {
-  content: '';
-  position: absolute;
-  width: 70%;
-  height: 90%;
-  background: linear-gradient(30deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transform: skewX(-50deg);
-  animation: shimmer 1.5s infinite;
-}
-
-@keyframes socialAnimation {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-  100% { transform: translateY(0); }
-}
-
-@keyframes learningAnimation {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(5px); }
-  100% { transform: translateY(0); }
-}
-
-@keyframes shimmer {
-  0% { left: -150%; }
-  100% { left: 150%; }
-}
-
-.social::after {
-  display: none;
-}
-
-.special-s {
-  position: relative;
+.location-box {
   display: inline-block;
+  padding: 0.6rem 1.2rem;
+  background-color: white;
+  color: #444;
+  font-weight: 600;
+  border-radius: 12px;
+  font-size: 1rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
 }
 
-.special-s::before,
-.special-s::after {
-  content: '•';
-  position: absolute;
-  color: white;
+@keyframes floatLoader {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-10px); }
 }
 
-.special-s::before {
-  font-size: 1.6rem;
-  top: -20px;
-  right: -4px;
-}
-
-.special-s::after {
-  font-size: 1.1rem;
-  bottom: -13px;
-  left: 0px;
+@keyframes floatText {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 </style>
