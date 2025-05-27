@@ -11,7 +11,7 @@
           @click="goToProduct(product.id)"
         >
           <img
-            :src="`data:image/jpeg;base64,${product.image}`"
+            :src="getImageSrc(product.image)"
             :alt="product.name"
             class="product-image"
           />
@@ -37,7 +37,9 @@ const router = useRouter();
 
 const props = defineProps({
   title: String,
-  products: Array,
+  products: {
+    type: Array
+  },
 });
 
 const visibleItems = ref(4);
@@ -59,6 +61,7 @@ onUnmounted(() => {
 });
 
 const availableProducts = computed(() => {
+  console.log("Available products:", props.products);
   return props.products
     .filter(product =>
       `${product.name} ${product.description}`.toLowerCase().includes(props.title.toLowerCase())
@@ -69,6 +72,12 @@ const availableProducts = computed(() => {
 const visibleProducts = computed(() => {
   return availableProducts.value.slice(0, visibleItems.value);
 });
+
+const getImageSrc = (image) => {
+  if (!image) return "";
+  if (image.startsWith("data:image")) return image;
+  return `data:image/jpeg;base64,${image}`;
+};
 
 const goToProduct = (id) => {
   router.push({ name: "ProductDetailPageView", params: { id } });

@@ -10,16 +10,21 @@
       </div>
 
       <div v-else class="home-container">
-        <AdverstaismentPrincipal />
+        <!-- Publicidad principal -->
+        <AdverstaismentPrincipal 
+          v-if="allProducts.length > 0"
+          :products="allProducts"
+        />
 
+        <!-- Carruseles por tipo de producto -->
         <section
-          v-for="(typeProducts, index) in randomCategoryTypeProducts"
+          v-for="(typeProducts, index) in allProducts"
           :key="index"
           class="carousel-section"
         >
           <CarouselProduct
-            :products="typeProducts.allProducts"
-            :title="typeProducts.title"
+            :products="allProducts"
+            :title="typeProducts.name"
           />
         </section>
       </div>
@@ -44,6 +49,7 @@ const store = useUserStore();
 const userRole = computed(() => store.getUserRole);
 const randomCategoryTypeProducts = ref([]);
 const categoriesWithTypes = ref([]);
+const allProducts = ref([]);
 const showLoader = ref(false);
 
 const getRandomTypes = (arr, num) => {
@@ -60,7 +66,8 @@ const fetchProductsAndTypes = async () => {
       api.get("/categoryTypes"),
     ]);
 
-    const allProducts = Array.isArray(productsRes.data) ? productsRes.data : [];
+    allProducts.value = Array.isArray(productsRes.data) ? productsRes.data : [];
+
     const categories = categoriesRes.data;
     const typesData = typesRes.data;
 
@@ -76,7 +83,7 @@ const fetchProductsAndTypes = async () => {
 
     const categoryTypeProductsMapped = categoriesWithTypes.value.flatMap((category) =>
       (category.types || []).map((type) => {
-        const availableProducts = allProducts.filter(
+        const availableProducts = allProducts.value.filter(
           (product) => product.typeId === type.id && product.stock > 0
         );
         return {
@@ -87,10 +94,10 @@ const fetchProductsAndTypes = async () => {
     ).filter(item => item.allProducts.length > 0);
 
     randomCategoryTypeProducts.value = getRandomTypes(categoryTypeProductsMapped, 5);
-    console.log(randomCategoryTypeProducts.value);
     showLoader.value = false;
   } catch (error) {
-    return error;
+    console.error("Error al obtener datos:", error);
+    showLoader.value = false;
   }
 };
 
@@ -113,17 +120,17 @@ onMounted(async () => {
   gap: 2rem;
 }
 
-.loader-mode {
+.loader-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
+  height: 80vh;
 }
 
 .carousel-section {
   margin-bottom: 2rem;
 }
 
-/* Responsividad */
 @media (max-width: 768px) {
   .home-container {
     margin-top: 6rem;

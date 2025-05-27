@@ -15,8 +15,11 @@
       @edit="editProduct"
       @delete="deleteProduct"
     >
-      <template #item.photoUrl="{ item }">
+      <template item.photoUrl="{ item }">
         <img :src="item.photoUrl" alt="Producto" class="product-image" />
+      </template>
+      <template #item.category="{ item }">
+        {{ getCategoryDescription(item.categoryId) }}
       </template>
     </SuperTable>
 
@@ -62,13 +65,18 @@
           </div>
 
           <label>
-            Categoría:
-            <input type="text" v-model="editedProduct.category" required />
+            Categoría Edit:
+              <select v-model="editedProduct.categoryId" @change="categoryChanged" required>
+                <option disabled value="">Seleccione una categoría</option>
+                <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                  {{ cat.description }}
+                </option>
+              </select>
           </label>
 
           <div class="dialog-actions">
             <button type="button" @click="closeDialog">Cancelar</button>
-            <button type="submit" :disabled="!editedProduct.name || !editedProduct.description">
+            <button type="submit" :disabled="!editedProduct.name || !editedProduct.description || !editedProduct.categoryId">
               {{ saving ? 'Guardando...' : 'Guardar' }}
             </button>
           </div>
@@ -86,42 +94,69 @@ import Swal from 'sweetalert2'
 
 const dialog = ref(false)
 const products = ref([])
+const categories = ref([])
 const saving = ref(false)
-
-const headers = [
-  { text: 'Nombre', value: 'name', align: 'center' },
-  { text: 'Descripción', value: 'description', align: 'center' },
-  { text: 'Precio', value: 'price', align: 'center' },
-  { text: 'Stock', value: 'stock', align: 'center' },
-  { text: 'Imagen', value: 'photoUrl', align: 'center' },
-  { text: 'Categoría', value: 'category', align: 'center' },
-  { text: 'Acciones', value: 'actions', align: 'center' },
-]
-
+const imageFile = ref(null)
+const imagePreview = ref(null)
 const editedIndex = ref(-1)
+
 const editedProduct = reactive({
   id: null,
   name: '',
   description: '',
   price: 0,
   stock: 0,
-  category: '',
+  categoryId: '',
   photoUrl: null,
 })
 
-const imageFile = ref(null)
-const imagePreview = ref(null)
-
 const isEditing = computed(() => editedIndex.value > -1)
+
+const headers = [
+  { text: 'Nombre', value: 'name', align: 'center' },
+  { text: 'Descripción', value: 'description', align: 'center' },
+  { text: 'Precio', value: 'price', align: 'center' },
+  { text: 'Stock', value: 'stock', align: 'center' },
+  { text: 'Imagen', value: 'imagen', align: 'center' },
+  { text: 'Categoría', value: 'categoryName', align: 'center' },
+  { text: 'Acciones', value: 'actions', align: 'center' },
+]
+
+function getCategoryDescription(categoryId) {
+  const category = categories.value.find((cat) => cat.id === categoryId)
+  return category ? category.description : ''
+}
+
+const fetchCategories = async () => {
+  try {
+    const { data } = await api.get('/categoryTypes')
+    categories.value = data
+  } catch (error) {
+    Swal.fire('Error', 'No se pudieron cargar las categorías.', 'error')
+  }
+}
 
 const fetchProducts = async () => {
   try {
     const { data } = await api.get('/product')
     products.value = data
   } catch (error) {
-    console.error('Error al cargar productos:', error)
     Swal.fire('Error', 'No se pudieron cargar los productos.', 'error')
   }
+}
+
+function base64ToFile(base64String, filename) {
+  const arr = base64String.split(',')
+  const mime = arr[0].match(/:(.*?);/)[1]
+  const bstr = atob(arr[1])
+  let n = bstr.length
+  const u8arr = new Uint8Array(n)
+
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n)
+  }
+
+  return new File([u8arr], filename, { type: mime })
 }
 
 const fetchProductById = async (id) => {
@@ -134,12 +169,17 @@ const openDialog = async (object = null) => {
     try {
       const product = await fetchProductById(object.id)
       editedIndex.value = products.value.findIndex((p) => p.id === product.id)
-      Object.assign(editedProduct, product)
+      editedProduct.id = product.id
+      editedProduct.name = product.name
+      editedProduct.description = product.description
+      editedProduct.price = product.price
+      editedProduct.stock = product.stock
+      editedProduct.photoUrl = product.photoUrl || null
+      editedProduct.categoryId = product.categoryId || ''
       imagePreview.value = product.photoUrl || null
       imageFile.value = null
       dialog.value = true
     } catch (error) {
-      console.error('Error al cargar producto:', error)
       Swal.fire('Error', 'No se pudo cargar el producto.', 'error')
     }
   } else {
@@ -150,7 +190,7 @@ const openDialog = async (object = null) => {
       description: '',
       price: 0,
       stock: 0,
-      category: '',
+      categoryId: '',
       photoUrl: null,
     })
     imagePreview.value = null
@@ -169,56 +209,55 @@ const onFileChange = (event) => {
   imagePreview.value = file ? URL.createObjectURL(file) : null
 }
 
-const saveProduct = async () => {
-  saving.value = true
-  try {
-    const formData = new FormData()
+  const saveProduct = async () => {
+    saving.value = true
+    try {
+      const payload = {
+        id: editedProduct.id,
+        name: editedProduct.name,
+        description: editedProduct.description,
+        price: editedProduct.price,
+        stock: editedProduct.stock,
+        image: String(await getBase64(imageFile.value)),
+        categoryId: Number(editedProduct.categoryId)
+      }
 
-    const payload = {
-      id: editedProduct.id,
-      name: editedProduct.name,
-      description: editedProduct.description,
-      price: editedProduct.price,
-      stock: editedProduct.stock,
-      category: editedProduct.category,
-    }
+      if (isEditing.value) {
+        await api.put(`/product/${editedProduct.id}`, payload, {
+          headers: { 'Content-Type': 'application/json' },
+        })
+      } else {
+        await api.post('/product', payload, {
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
 
-    formData.append(
-      'product',
-      new Blob([JSON.stringify(payload)], { type: 'application/json' })
-    )
-    console.log('Payload:', payload)
-    console.log('Image file:', imageFile.value)
-    if (imageFile.value) {
-      formData.append('image', imageFile.value)
-    }
-
-    if (isEditing.value) {
-      await api.put(`/product/${editedProduct.id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      await fetchProducts()
+      closeDialog()
+      Swal.fire({
+        icon: 'success',
+        title: 'Producto guardado',
+        timer: 1500,
+        showConfirmButton: false,
       })
-    } else {
-      await api.post('/product', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+    } catch (error) {
+      Swal.fire('Error', 'No se pudo guardar el producto.', 'error')
+    } finally {
+      saving.value = false
     }
-
-    await fetchProducts()
-    closeDialog()
-    Swal.fire({
-      icon: 'success',
-      title: 'Producto guardado',
-      timer: 1500,
-      showConfirmButton: false,
-    })
-  } catch (error) {
-    console.error('Error al guardar producto:', error)
-    Swal.fire('Error', 'No se pudo guardar el producto.', 'error')
-  } finally {
-    saving.value = false
   }
-}
-
+  function categoryChanged(event) {
+    editedProduct.categoryId = event.target.value
+  }
+  const getBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = (error) => reject(error)
+    })
+  }
+// Eliminar producto
 const deleteProduct = async (object) => {
   const result = await Swal.fire({
     title: '¿Seguro que quieres eliminar este producto?',
@@ -235,14 +274,17 @@ const deleteProduct = async (object) => {
       products.value = products.value.filter((p) => p.id !== object.id)
       Swal.fire('Eliminado!', 'El producto ha sido eliminado.', 'success')
     } catch (error) {
-      console.error('Error al eliminar producto:', error)
       Swal.fire('Error', 'No se pudo eliminar el producto.', 'error')
     }
   }
 }
 
 const editProduct = (object) => openDialog(object)
-onMounted(fetchProducts)
+
+onMounted(() => {
+  fetchCategories()
+  fetchProducts()
+})
 </script>
 
 <style scoped>
@@ -296,81 +338,118 @@ h2 {
 }
 
 .product-image {
-  max-width: 80px;
-  max-height: 80px;
-  border-radius: 8px;
+  max-width: 70px;
+  border-radius: 6px;
 }
 
 .dialog-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background-color: rgba(0,0,0,0.35);
   display: flex;
-  align-items: center;
   justify-content: center;
-  z-index: 1000;
+  align-items: center;
+  z-index: 9999;
 }
 
 .dialog {
   background: white;
-  padding: 1.5rem 2rem;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 500px;
-  margin: 1rem;
-  box-sizing: border-box;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  user-select: none;
+  border-radius: 12px;
+  width: 420px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.2);
 }
 
 .dialog h3 {
-  margin-top: 0;
-  font-weight: 600;
-  color: #222;
-  user-select: none;
+  margin: 0 0 12px;
 }
 
-form label {
+.dialog label {
   display: block;
-  margin-bottom: 12px;
-  font-weight: 500;
-  color: #333;
-  user-select: none;
-}
-
-form input[type='text'],
-form input[type='number'],
-form textarea {
-  width: 100%;
-  padding: 8px 10px;
-  margin-top: 4px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  margin: 8px 0 12px;
+  font-weight: 600;
   font-size: 0.95rem;
-  font-family: inherit;
-  box-sizing: border-box;
+  color: #444;
 }
 
-form textarea {
+.dialog input[type="text"],
+.dialog input[type="number"],
+.dialog textarea,
+.dialog select {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  box-sizing: border-box;
+  font-weight: 400;
+  outline-offset: 2px;
+  outline-color: #3a86ff;
+  transition: border-color 0.3s ease;
+}
+
+.dialog textarea {
   resize: vertical;
   min-height: 60px;
 }
 
+.dialog input[type="file"] {
+  padding: 3px;
+}
+
+.dialog input[type="text"]:focus,
+.dialog input[type="number"]:focus,
+.dialog textarea:focus,
+.dialog select:focus {
+  border-color: #3a86ff;
+}
+
 .image-preview {
-  margin-bottom: 1rem;
+  margin-bottom: 8px;
   text-align: center;
 }
 
 .image-preview img {
   max-width: 100%;
   max-height: 150px;
-  border-radius: 8px;
+  border-radius: 6px;
+  object-fit: contain;
+  user-select: none;
 }
 
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 20px;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.dialog-actions button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  font-size: 1rem;
+}
+
+.dialog-actions button[type="button"] {
+  background-color: #ccc;
+  color: #333;
+}
+
+.dialog-actions button[type="button"]:hover {
+  background-color: #bbb;
+}
+
+.dialog-actions button[type="submit"] {
+  background-color: #3a86ff;
+  color: white;
+}
+
+.dialog-actions button[type="submit"]:disabled {
+  background-color: #89b8ff;
+  cursor: not-allowed;
 }
 </style>
