@@ -34,8 +34,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import HeaderView from '@/views/Commerce/ComponentsCommerce/Header/View/HeaderView.vue';
-import UsersView from '@/views/Commerce/Users/View/UsersView.vue';
-import LocationAdminView from '@/views/Commerce/LocationAdmin/View/LocationAdminView.vue';
 import CategoryProductsView from '@/views/Commerce/AdminPanel/Views/CategoryProductsView.vue';
 import ProductsView from '@/views/Commerce/AdminPanel/Views/ProductsView.vue';
 

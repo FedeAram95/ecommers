@@ -1,109 +1,69 @@
 <template>
-  <div class="login-container">
-    <header class="login-header">
-      <router-link to="/home">
-        <img :src="logo" alt="Logo" class="logo-image" />
-      </router-link>
-    </header>
-    <div class="login-content">
-      <div class="welcome-container">
-        <h2 class="welcome-title">¡Te damos la bienvenida!</h2>
-      </div>
-      <div class="login-box">
-        <form @submit.prevent="handleLogin">
+  <div class="login-page">
+    <HeaderView />
+
+    <main class="login-main">
+      <div class="login-card">
+        <h2 class="login-title">¡Te damos la bienvenida!</h2>
+
+        <form @submit.prevent="handleLogin" class="login-form">
           <div class="form-group">
-            <label for="username" class="form-label">Usuario</label>
+            <label for="username">Usuario</label>
             <input
               type="text"
               id="username"
               v-model="username"
-              class="form-input"
               placeholder="Ingresa tu usuario"
               required
             />
           </div>
+
           <div class="form-group">
-            <label for="password" class="form-label">Contraseña</label>
-            <input
-              :type="passwordVisible ? 'text' : 'password'"
-              id="password"
-              v-model="password"
-              class="form-input password-input"
-              placeholder="Ingresa tu contraseña"
-              required
-            />
-            <button
-              type="button"
-              @click="togglePasswordVisibility"
-              class="password-toggle"
-              tabindex="-1"
-            >
-              <span v-if="passwordVisible">
-                <svg
-                  class="icon"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke="currentColor"
-                    stroke-width="2"
-                    d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6Z"
-                  />
-                  <path
-                    stroke="currentColor"
-                    stroke-width="2"
-                    d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                  />
-                </svg>
-              </span>
-              <span v-else>
-                <svg
-                  class="icon"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke="currentColor"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M3.933 13.909A4.357 4.357 0 0 1 3 12c0-1 4-6 9-6m7.6 3.8A5.068 5.068 0 0 1 21 12c0 1-3 6-9 6-.314 0-.62-.014-.918-.04M5 19 19 5m-4 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                  />
-                </svg>
-              </span>
-            </button>
+            <label for="password">Contraseña</label>
+            <div class="password-wrapper">
+              <input
+                :type="passwordVisible ? 'text' : 'password'"
+                id="password"
+                v-model="password"
+                placeholder="Ingresa tu contraseña"
+                required
+              />
+              <button type="button" @click="togglePasswordVisibility" class="toggle-btn" tabindex="-1">
+                <span v-if="passwordVisible">
+                  <i class="fas fa-eye"></i>
+                </span>
+                <span v-else>
+                  <i class="fas fa-eye-slash"></i>
+                </span>
+              </button>
+            </div>
           </div>
-          <button type="submit" class="submit-button">
-            Ingresar
-          </button>
-          <div class="register-link">
-            <span>
-              ¿No tenés cuenta? <span class="bold"> Registrate </span>
-            </span>
+
+          <button type="submit" class="submit-btn">Ingresar</button>
+
+          <div class="register">
+            ¿No tenés cuenta?
+            <span class="link" @click="goToRegister">Registrate</span>
           </div>
         </form>
       </div>
-    </div>
+    </main>
+
+    <FooterView />
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import logoImage from "@/assets/logo.png";
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useUserStore } from '@/store';
 import api from '@/plugins/axios';
+import HeaderView from '@/views/Commerce/ComponentsCommerce/Header/View/HeaderView.vue';
+import FooterView from '@/views/Commerce/ComponentsCommerce/Footer/View/FooterView.vue';
 
-const username = ref("");
-const password = ref("");
+const username = ref('');
+const password = ref('');
 const passwordVisible = ref(false);
-const logo = logoImage;
 const router = useRouter();
 const store = useUserStore();
 
@@ -113,193 +73,155 @@ const togglePasswordVisibility = () => {
 
 const mapRole = (roleNumber) => {
   switch (roleNumber) {
-    case '1':
-      return 'ADMIN';
-    case '2':
-      return 'CLIENT';
-    case '3':
-      return 'SELLER';
-    default:
-      return 'CLIENT';
+    case '1': return 'ADMIN';
+    case '2': return 'CLIENT';
+    case '3': return 'SELLER';
+    default: return 'CLIENT';
   }
 };
 
 const handleLogin = async () => {
   try {
-    console.log('Intentando login con:', {
+    const response = await api.post('/auth/login', {
       username: username.value,
-      password: password.value
+      password: password.value,
     });
-    
-    const loginResponse = await api.post(
-      '/auth/login',
-      {
-        username: username.value,
-        password: password.value
-      }
-    );
 
-    console.log('Respuesta del servidor:', loginResponse.data);
+    const { role, username: returnedUsername } = response.data;
+    const mappedRole = mapRole(role);
 
-    if (loginResponse.data && loginResponse.data.role) {
-      const { role, username: returnedUsername } = loginResponse.data;
-      const mappedRole = mapRole(role);
+    localStorage.setItem('username', returnedUsername);
+    localStorage.setItem('userRole', mappedRole);
+    store.setUserRole(mappedRole);
 
-      localStorage.setItem('username', returnedUsername);
-      localStorage.setItem('userRole', mappedRole);
-      store.setUserRole(mappedRole);
-
-      router.push('/home');
-    } else {
-      throw new Error('Respuesta inválida del servidor');
-    }
-    
+    router.push('/home');
   } catch (error) {
-    console.error('Error en login:', error);
-    if (error.response) {
-      console.error('Detalles del error:', error.response.data);
-      if (error.response.status === 401) {
-        alert('Usuario o contraseña incorrectos');
-      } else if (error.response.status === 400) {
-        alert('Faltan campos requeridos');
-      } else {
-        alert(`Error al iniciar sesión: ${error.response.data.message || 'Error desconocido'}`);
-      }
+    if (error.response?.status === 401) {
+      alert('Usuario o contraseña incorrectos');
+    } else if (error.response?.status === 400) {
+      alert('Faltan campos requeridos');
     } else {
       alert('Error de conexión con el servidor');
     }
   }
 };
+
+// Nuevo método para manejar el clic en "Registrate"
+const goToRegister = () => {
+  router.push({ name: "MyAccountView" });
+};
 </script>
 
 <style scoped>
-.login-container {
-  min-height: 100vh;
+.login-page {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 1rem;
-  background: linear-gradient(to top, #3A5199, #f3f4f6);
-  padding-top: 2rem;
+  min-height: 100vh;
+  background-color: #f9fafb;
 }
 
-.login-header {
-  position: fixed;
-  top: 0;
-  width: 100%;
+.login-main {
+  flex: 1;
   display: flex;
-  justify-content: flex-start;
-  background-color: #3A5199;
-  padding: 0.5rem 0 0.5rem 2rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.logo-image {
-  height: 4rem;
-  width: auto;
-}
-
-.login-content {
-  padding-top: 8rem;
-}
-
-.welcome-container {
-  display: flex;
-  align-items: center;
   justify-content: center;
-  padding-bottom: 0.25rem;
-}
-
-.welcome-title {
-  font-family: 'Custom Font', sans-serif;
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #374151;
-  margin-bottom: 2rem;
-}
-
-.login-box {
-  width: 100%;
-  max-width: 28rem;
-  border-radius: 0.5rem;
-  background-color: white;
+  align-items: center;
   padding: 2rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.login-card {
+  background-color: #fff;
+  padding: 2rem 2.5rem;
+  border-radius: 1rem;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+.login-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #111827;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 .form-group {
-  position: relative;
-  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
 }
 
-.form-label {
-  font-family: 'Custom Font', sans-serif;
-  margin-bottom: 0.75rem;
-  display: block;
-  text-align: left;
-  font-size: 1.125rem;
+.form-group label {
   font-weight: 500;
+  margin-bottom: 0.5rem;
   color: #374151;
 }
 
-.form-input {
-  width: 100%;
-  border-radius: 0.25rem;
-  border: 1px solid #d1d5db;
+.form-group input {
   padding: 0.5rem 0.75rem;
-  color: #6b7280;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  font-size: 1rem;
+  color: #374151;
 }
 
-.form-input:focus {
+.form-group input:focus {
   border-color: #3b82f6;
   outline: none;
 }
 
-.password-input {
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper input {
+  width: 100%;
   padding-right: 2.5rem;
 }
 
-.password-toggle {
+.toggle-btn {
   position: absolute;
-  right: 0.75rem;
-  top: 2.75rem;
-  color: #6b7280;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
+  color: #6b7280;
   cursor: pointer;
+  font-size: 1.25rem;
 }
 
-.password-toggle:focus {
-  outline: none;
-}
-
-.icon {
-  height: 1.5rem;
-  width: 1.5rem;
-  color: #1f2937;
-}
-
-.submit-button {
-  width: 100%;
-  border-radius: 0.25rem;
-  background-color: #f97316;
-  padding: 0.5rem;
+.submit-btn {
+  background-color: #3b82f6;
   color: white;
-  transition: background-color 0.3s;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-.submit-button:hover {
-  background-color: #ea580c;
+.submit-btn:hover {
+  background-color: #2563eb;
 }
 
-.register-link {
-  display: flex;
-  justify-content: center;
-  padding: 0.75rem 0;
+.register {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-top: 1rem;
 }
 
-.bold {
-  font-weight: bold;
+.register .link {
+  font-weight: 600;
+  color: #3b82f6;
+  cursor: pointer;
 }
 </style>

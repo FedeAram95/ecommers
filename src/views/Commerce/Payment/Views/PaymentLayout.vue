@@ -1,5 +1,5 @@
 <template>
-  <HeaderPayment />
+  <HeaderView />
   <div class="payment-container">
     <div class="payment-content">
       <h2 v-if="currentStepIndex === 0" class="payment-title">¿Quien esta por Comprar?</h2>
@@ -47,7 +47,7 @@
 import { ref } from "vue";
 import { useRouter } from 'vue-router';
 import PaymentSummary from "../Components/PaymentSummary.vue";
-import HeaderPayment from "../Components/HeaderPayment.vue";
+import HeaderView from "../Components/HeaderView.vue";
 import PaymentStep from "../Components/PaymentStep.vue";
 import SuccessMessage from "@/generalComponents/AlertMessage/SuccessMessage.vue";
 
